@@ -2,12 +2,6 @@ package com.morsetree;
 
 import java.text.Normalizer;
 
-class Node {
-    Node filho_esquerdo;
-    char caractere;
-    Node filho_direito;
-}
-
 public class MorseTree {
     Node raiz;
 
@@ -92,7 +86,7 @@ public class MorseTree {
 
     public String codificar(String texto) {
         String normalizado = Normalizer.normalize(texto.toLowerCase(), Normalizer.Form.NFD);
-        normalizado.replaceAll("\\p{M}", "");
+        normalizado = normalizado.replaceAll("\\p{M}", "");
 
         StringBuilder codigo = new StringBuilder();
         for (int i = 0; i < normalizado.length(); i++) {
@@ -114,14 +108,14 @@ public class MorseTree {
     }
 
     public String codificarCaractere(char caractere, StringBuilder codigo) {
-        return codificar_helper(this.raiz, caractere, codigo) ? codigo.toString() : null;
+        return codificarHelper(this.raiz, caractere, codigo) ? codigo.toString() : null;
     }
 
     public boolean codificarEm(char caractere, StringBuilder codigo) {
-        return codificar_helper(this.raiz, caractere, codigo);
+        return codificarHelper(this.raiz, caractere, codigo);
     }
 
-    private boolean codificar_helper(Node no, char alvo, StringBuilder caminho) {
+    private boolean codificarHelper(Node no, char alvo, StringBuilder caminho) {
         if (no == null) {
             return false;
         }
@@ -131,20 +125,34 @@ public class MorseTree {
         }
 
         caminho.append('.');
-        Boolean encontrado = codificar_helper(no.filho_esquerdo, alvo, caminho);
+        Boolean encontrado = codificarHelper(no.filho_esquerdo, alvo, caminho);
         if (encontrado) {
             return true;
         }
         caminho.deleteCharAt(caminho.length() - 1);
 
         caminho.append('-');
-        encontrado = codificar_helper(no.filho_direito, alvo, caminho);
+        encontrado = codificarHelper(no.filho_direito, alvo, caminho);
         if (encontrado) {
             return true;
         }
         caminho.deleteCharAt(caminho.length() - 1);
 
         return false;
+    }
+
+    public int getAltura() {
+        return getAlturaHelper(this.raiz);
+    }
+
+    private int getAlturaHelper(Node no) {
+        if (no == null) {
+            return 0;
+        }
+
+        int alturaEsquerda = 1 + getAlturaHelper(no.filho_esquerdo);
+        int alturaDireita = 1 + getAlturaHelper(no.filho_direito);
+        return Math.max(alturaEsquerda, alturaDireita);
     }
 
     public static MorseTree preenchida() {
@@ -184,26 +192,13 @@ public class MorseTree {
         arvore.inserir("....-", '4');
         arvore.inserir("...--", '3');
         arvore.inserir("..---", '2');
-        arvore.inserir(".-...", '&');
         arvore.inserir(".----", '1');
         arvore.inserir("-....", '6');
-        arvore.inserir("-...-", '=');
-        arvore.inserir("-..-.", '/');
         arvore.inserir("--...", '7');
         arvore.inserir("---..", '8');
         arvore.inserir("----.", '9');
         arvore.inserir("-----", '0');
 
-        arvore.inserir(".-.-.-", '.');
-        arvore.inserir("--..--", ',');
-        arvore.inserir("---...", ':');
-        arvore.inserir("..--..", '?');
-        arvore.inserir(".----.", '\'');
-        arvore.inserir("-....-", '-');
-        arvore.inserir("-.--.-", '(');
-        arvore.inserir(".-..-.", '"');
-        arvore.inserir(".--.-.", '@');
-        arvore.inserir("-.-.--", '!');
         return arvore;
     }
 }

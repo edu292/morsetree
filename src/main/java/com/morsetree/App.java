@@ -1,6 +1,7 @@
 package com.morsetree;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
@@ -32,14 +33,20 @@ public class App extends Application {
         });
 
         VBox controles = new VBox(10, campoMorse, campoTexto);
+        controles.setPadding(new Insets(15));
         controles.setAlignment(Pos.CENTER);
+
+        MorseTreeView treeView = new MorseTreeView(arvore);
 
         BorderPane layout = new BorderPane();
         layout.setTop(controles);
+        layout.setCenter(treeView);
 
-        stage.setScene(new Scene(layout, 700, 500));
+        stage.setScene(new Scene(layout));
         stage.setTitle("MorseTree");
+        stage.setMaximized(true);
         stage.show();
+
     }
 
     public static void main(String[] args) {
