@@ -1,12 +1,14 @@
 package com.morsetree;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
+import com.morsetree.MorseTree.ResultadoCaminho;
+
+import javafx.geometry.Insets;
 import javafx.scene.Cursor;
+import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -16,90 +18,86 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
-public class MorseTreeView extends Pane {
-    private static final Color COR_LINHA_PADRAO = Color.web("#999999");
-    private static final Color COR_NO_PADRAO = Color.WHITE;
-    private static final Color COR_BORDA_PADRAO = Color.BLACK;
+public class MorseTreeView extends StackPane {
+    private static final Color COR_LINHA = Color.web("#999999");
+    private static final Color COR_NO = Color.WHITE;
+    private static final Color COR_BORDA = Color.BLACK;
     private static final Color COR_CAMINHO = Color.web("#ff8c00");
     private static final Color COR_ENCONTRADO = Color.web("#2ecc71");
     private static final Color COR_INVALIDO = Color.web("#e74c3c");
 
     private final MorseTree arvore;
-    private final double espacamentoVertical = 90;
-    private final double largura;
+    private final double espacamentoY = 90;
+    private final double larguraTotal;
     private final double alturaTotal;
     private final double raioNo = 22;
 
+    private final Pane canvas = new Pane();
     private final Pane layerLinhas = new Pane();
     private final Pane layerNos = new Pane();
-
-    private final Map<Node, Circle> circulosPorNo = new HashMap<>();
-    private final Map<Node, Line> linhasPorNo = new HashMap<>();
-    private final List<Node> nosDestacados = new ArrayList<>();
 
     private Consumer<Character> aoClicarCaractere;
 
     public MorseTreeView(MorseTree arvore) {
         this.arvore = arvore;
-        getChildren().addAll(layerLinhas, layerNos);
-        int profundidadeMaxima = arvore.getAltura() - 1;
-        double distanciaFolhas = raioNo * 2.0 + 16;
-        this.largura = Math.pow(2, profundidadeMaxima) * distanciaFolhas;
-        this.alturaTotal = profundidadeMaxima * espacamentoVertical + raioNo * 2.0 + 40;
-        setPrefSize(largura, alturaTotal);
-        render();
-    }
+        int maxDepth = arvore.getAltura() - 1;
+        this.larguraTotal = Math.pow(2, maxDepth) * (raioNo * 2.0 + 16);
+        this.alturaTotal = maxDepth * espacamentoY + raioNo * 2.0 + 40;
 
-    public double getLarguraTotal() {
-        return largura;
-    }
+        canvas.setPrefSize(larguraTotal, alturaTotal);
+        canvas.getChildren().addAll(layerLinhas, layerNos);
+        getChildren().add(new Group(canvas));
 
-    public double getAlturaTotal() {
-        return alturaTotal;
+        widthProperty().addListener((obs, oldVal, newVal) -> ajustarEscala());
+        heightProperty().addListener((obs, oldVal, newVal) -> ajustarEscala());
+
+        destacarResultado(null);
     }
 
     public void setAoClicarCaractere(Consumer<Character> callback) {
         this.aoClicarCaractere = callback;
     }
 
-    public void render() {
+    public void destacarResultado(ResultadoCaminho<?> resultado) {
         layerLinhas.getChildren().clear();
         layerNos.getChildren().clear();
-        circulosPorNo.clear();
-        linhasPorNo.clear();
-        nosDestacados.clear();
 
-        Node raiz = arvore.raiz;
-        double xRaiz = largura / 2;
-        renderNo(raiz, xRaiz, 60, xRaiz, 60, largura / 4.0);
+        List<No> caminho = Collections.emptyList();
+        boolean valido = false;
+
+        if (resultado != null) {
+            if (resultado.caminho() != null) {
+                caminho = resultado.caminho();
+            }
+            valido = resultado.valido();
+        }
+        renderNo(arvore.raiz, larguraTotal / 2, 60, larguraTotal / 4.0, caminho, valido);
     }
 
-    private void renderNo(Node no, double x, double y, double xPai, double yPai, double larguraNivel) {
+    private void renderNo(No no, double x, double y, double larguraNivel, List<No> caminho, boolean valido) {
         if (no == null) {
             return;
         }
 
-        if (x != xPai || y != yPai) {
-            Line linha = new Line(xPai, yPai, x, y);
-            linha.setStroke(COR_LINHA_PADRAO);
-            linha.setStrokeWidth(1.5);
-            Text labelLinha = new Text(x < xPai ? "." : "-");
-            labelLinha.setFont(Font.font("Monospaced", FontWeight.BOLD, 20));
+        boolean inPath = caminho.contains(no);
+        boolean isTerminal = !caminho.isEmpty() && no == caminho.get(caminho.size() - 1);
 
-            labelLinha.setLayoutX((xPai + x) / 2.0 - 6);
-            labelLinha.setLayoutY((yPai + y) / 2.0 - 6);
-            layerLinhas.getChildren().addAll(linha, labelLinha);
-            linhasPorNo.put(no, linha);
+        Color corNo = COR_NO;
+        if (inPath) {
+            if (isTerminal) {
+                corNo = valido ? COR_ENCONTRADO : COR_INVALIDO;
+            } else {
+                corNo = COR_CAMINHO;
+            }
         }
 
-        Circle circulo = new Circle(raioNo);
-        circulo.setStroke(COR_BORDA_PADRAO);
-        circulo.setFill(COR_NO_PADRAO);
-        circulo.setStrokeWidth(1.5);
-        circulosPorNo.put(no, circulo);
+        Circle circulo = new Circle(raioNo, corNo);
+        circulo.setStroke(inPath ? corNo.darker() : COR_BORDA);
+        circulo.setStrokeWidth(inPath ? 2.5 : 1.5);
 
         Text label = new Text(String.valueOf(no.caractere));
         label.setFont(Font.font("System", FontWeight.BOLD, 20));
+
         StackPane frameNo = new StackPane(circulo, label);
         frameNo.setLayoutX(x - raioNo);
         frameNo.setLayoutY(y - raioNo);
@@ -112,77 +110,47 @@ public class MorseTreeView extends Pane {
                 }
             });
         }
-
         layerNos.getChildren().add(frameNo);
 
-        double proximoY = y + espacamentoVertical;
+        double proximoY = y + espacamentoY;
         double proximaLargura = larguraNivel / 2.0;
-        renderNo(no.filho_esquerdo, x - larguraNivel, proximoY, x, y, proximaLargura);
-        renderNo(no.filho_direito, x + larguraNivel, proximoY, x, y, proximaLargura);
-    }
 
-    public void limparDestaque() {
-        for (Node no : nosDestacados) {
-            Circle circulo = circulosPorNo.get(no);
-            if (circulo != null) {
-                circulo.setFill(COR_NO_PADRAO);
-                circulo.setStroke(COR_BORDA_PADRAO);
-                circulo.setStrokeWidth(1.5);
-            }
-            Line linha = linhasPorNo.get(no);
-            if (linha != null) {
-                linha.setStroke(COR_LINHA_PADRAO);
-                linha.setStrokeWidth(1.5);
-            }
+        if (no.filho_esquerdo != null) {
+            double proxX = x - larguraNivel;
+            renderRamo(x, y, proxX, proximoY, ".", inPath && caminho.contains(no.filho_esquerdo));
+            renderNo(no.filho_esquerdo, proxX, proximoY, proximaLargura, caminho, valido);
         }
-        nosDestacados.clear();
+
+        if (no.filho_direito != null) {
+            double proxX = x + larguraNivel;
+            renderRamo(x, y, proxX, proximoY, "-", inPath && caminho.contains(no.filho_direito));
+            renderNo(no.filho_direito, proxX, proximoY, proximaLargura, caminho, valido);
+        }
     }
 
-    public void destacarCaminho(String codigoMorse) {
-        limparDestaque();
-        if (codigoMorse == null || codigoMorse.isEmpty()) {
+    private void renderRamo(double x1, double y1, double x2, double y2, String simbolo, boolean ativo) {
+        Line linha = new Line(x1, y1, x2, y2);
+        linha.setStroke(ativo ? COR_CAMINHO : COR_LINHA);
+        linha.setStrokeWidth(ativo ? 3.0 : 1.5);
+
+        Text label = new Text(simbolo);
+        label.setFont(Font.font("Monospaced", FontWeight.BOLD, 20));
+        label.setLayoutX((x1 + x2) / 2.0 - 6);
+        label.setLayoutY((y1 + y2) / 2.0 - 6);
+
+        layerLinhas.getChildren().addAll(linha, label);
+    }
+
+    private void ajustarEscala() {
+        Insets in = getInsets();
+        double w = getWidth() - in.getLeft() - in.getRight();
+        double h = getHeight() - in.getTop() - in.getBottom();
+        if (w <= 0 || h <= 0) {
             return;
         }
 
-        Node no = arvore.raiz;
-        destacarNo(no, COR_CAMINHO);
-
-        boolean caminhoValido = true;
-        for (int i = 0; i < codigoMorse.length(); i++) {
-            char c = codigoMorse.charAt(i);
-            Node proximo = c == '.' ? no.filho_esquerdo : c == '-' ? no.filho_direito : null;
-            if (proximo == null) {
-                caminhoValido = false;
-                break;
-            }
-
-            destacarLinha(proximo, COR_CAMINHO);
-            no = proximo;
-
-            boolean ultimo = i == codigoMorse.length() - 1;
-            destacarNo(no, ultimo && no.caractere != '\0' ? COR_ENCONTRADO : COR_CAMINHO);
-        }
-
-        if (!caminhoValido) {
-            destacarNo(no, COR_INVALIDO);
-        }
-    }
-
-    private void destacarNo(Node no, Color cor) {
-        Circle circulo = circulosPorNo.get(no);
-        if (circulo != null) {
-            circulo.setFill(cor);
-            circulo.setStroke(cor.darker());
-            circulo.setStrokeWidth(2.5);
-        }
-        nosDestacados.add(no);
-    }
-
-    private void destacarLinha(Node no, Color cor) {
-        Line linha = linhasPorNo.get(no);
-        if (linha != null) {
-            linha.setStroke(cor);
-            linha.setStrokeWidth(3);
-        }
+        double scale = Math.min(w / larguraTotal, h / alturaTotal);
+        canvas.setScaleX(scale);
+        canvas.setScaleY(scale);
     }
 }
