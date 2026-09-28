@@ -48,7 +48,7 @@ public class MorseTreeView extends StackPane {
         canvas.getChildren().addAll(layerLinhas, layerNos);
         getChildren().add(new Group(canvas));
 
-        widthProperty().addListener((obs, oldVal, newVal) -> ajustarEscala());
+        widthProperty().addListener((obs, oldVal, newVal) -> djustarEscala());
         heightProperty().addListener((obs, oldVal, newVal) -> ajustarEscala());
 
         destacarResultado(null);
