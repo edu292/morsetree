@@ -149,7 +149,7 @@ public class MorseTreeView extends StackPane {
             return;
         }
 
-        double scale = Math.min(w / larguraTotal, h / alturaTotal);
+        double scale = Math.min(w / larguraTotal, h / alturaTotal) * 0.95;
         canvas.setScaleX(scale);
         canvas.setScaleY(scale);
     }
