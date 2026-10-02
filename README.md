@@ -6,6 +6,7 @@ Conversor de texto para código Morse (e vice-versa) usando uma árvore binária
 
 - João Pedro Gadens Mosson
 - Eduardo Skoroboatei Gomes
+- João Pedro Magri Pozzan
 
 ## Como executar
 
